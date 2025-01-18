@@ -1,7 +1,7 @@
 import discord
-import random
-from bot import bot
-from bot import GUILD_ID
+from utils.gen_roll import rng
+from utils.bot import bot
+from utils.bot import GUILD_ID
 
 # Slash command to roll a dice
 @bot.tree.command(name="roll", description="Roll a dice from the D&D set.", guild=GUILD_ID)
@@ -24,9 +24,7 @@ async def roll(interaction: discord.Interaction, dice: str = None):
             await interaction.response.send_message("Unsupported dice type! Use d4, d6, d8, d10, d12, or d20.", ephemeral=True)
             return
         
-        # Roll the dice
-        result = random.randint(1, sides)
-        await interaction.response.send_message(f"You rolled a {dice}: 🎲 {result}")
+        await interaction.response.send_message(f"You rolled a {dice}: 🎲 {rng(sides)}")
     except Exception as e:
         await interaction.response.send_message(f"An error occurred: {e}", ephemeral=True)
         

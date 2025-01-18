@@ -4,7 +4,7 @@ import os
 # Loads file 
 from commands.roll import roll
 from commands.initiative import initiative
-from bot import bot
+from utils.bot import bot
 
 # Load environment variables from .env file
 load_dotenv()

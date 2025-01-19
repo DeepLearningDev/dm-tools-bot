@@ -7,6 +7,9 @@ from utils.gen_roll import rng
 from utils.bot import bot
 from utils.bot import GUILD_ID
 
+from libraries.player_library import character_library
+from libraries.player_library import get_character_stats
+
 # Predefined list of characters and their corresponding Discord IDs
 character_list = ["Azalea", "Gorwick", "Globius", "Klud", "Mesmir", "Rogath"]
 character_ids = [

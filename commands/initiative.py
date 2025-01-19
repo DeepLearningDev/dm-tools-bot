@@ -109,13 +109,16 @@ class InitiativeMenu(discord.ui.View):
             await self.update_buttons(interaction)
             return
 
-        # Handle normal roll initiative logic
+        # Handle GM rolling initiative for all characters
         if user_id == self.gm_id:
             rolled_characters = {entry["character"] for entry in self.initiative_tracker}
             remaining_characters = [char for char in self.character_list if char not in rolled_characters]
 
             for char in remaining_characters:
-                initiative_score = rng(20)
+                character_stats = get_character_stats(char)
+                modifier = character_stats.get("initiative_modifier", 0) if character_stats else 0
+                roll = rng(20)
+                initiative_score = roll + modifier
                 self.initiative_tracker.append({"character": char, "initiative": initiative_score})
 
             self.initiative_tracker = sorted(self.initiative_tracker, key=lambda x: x["initiative"], reverse=True)
@@ -134,6 +137,7 @@ class InitiativeMenu(discord.ui.View):
             await self.update_buttons(interaction)
             return
 
+        # Handle individual players rolling initiative
         if user_id not in self.character_ids:
             await interaction.response.send_message(
                 "You are not assigned to any character in this initiative tracker.", ephemeral=True
@@ -149,7 +153,10 @@ class InitiativeMenu(discord.ui.View):
             )
             return
 
-        initiative_score = rng(20)
+        character_stats = get_character_stats(character_name)
+        modifier = character_stats.get("initiative_modifier", 0) if character_stats else 0
+        roll = rng(20)
+        initiative_score = roll + modifier
         self.initiative_tracker.append({"character": character_name, "initiative": initiative_score})
 
         self.initiative_tracker = sorted(self.initiative_tracker, key=lambda x: x["initiative"], reverse=True)
@@ -162,10 +169,11 @@ class InitiativeMenu(discord.ui.View):
         )
 
         await interaction.response.edit_message(
-            content=f"`{character_name}` rolled initiative: 🎲 {initiative_score}\n\n**Initiative Order:**\n{tracker_message}",
+            content=f"`{character_name}` rolled initiative: 🎲 {roll} + {modifier} = `{initiative_score}`\n\n**Initiative Order:**\n{tracker_message}",
             view=self
         )
         await self.update_buttons(interaction)
+
 
     async def end_turn(self, interaction: discord.Interaction):
         """
@@ -209,36 +217,34 @@ async def initiative(interaction: discord.Interaction, character: str = None):
     """
     Start initiative rolling, or roll for specific/all characters.
     """
-    # Persistent tracker stored in memory
     if not hasattr(bot, "initiative_tracker"):
         bot.initiative_tracker = []
 
     # Default behavior: Start initiative rolling
     if character is None:
         menu = InitiativeMenu(character_list, character_ids, GM_ID)
-        # Send a public message that everyone can see and interact with
         await interaction.response.send_message(
             "Click the button below to roll initiative!",
             view=menu
         )
         return
 
-    # Handle rolling for "All" characters
     if character == "All":
         if str(interaction.user.id) == GM_ID:
-            # GM rolls initiative for all characters
-            bot.initiative_tracker = [
-                {"character": char, "initiative": rng(20)} for char in character_list
-            ]
-            # Sort the tracker by initiative score
-            bot.initiative_tracker = sorted(bot.initiative_tracker, key=lambda x: x["initiative"], reverse=True)
+            bot.initiative_tracker = []
+            for char in character_list:
+                stats = get_character_stats(char)
+                modifier = stats.get("initiative_modifier", 0) if stats else 0
+                roll = rng(20)
+                initiative_score = roll + modifier
+                bot.initiative_tracker.append({"character": char, "initiative": initiative_score})
 
-            # Generate tracker message
+            bot.initiative_tracker = sorted(bot.initiative_tracker, key=lambda x: x["initiative"], reverse=True)
             tracker_message = "\n".join(
                 [f"`{entry['character']}`: Initiative `{entry['initiative']}`" for entry in bot.initiative_tracker]
             )
             await interaction.response.send_message(
-                f"Initiative rolled for all characters by the GM.\n\n**Current Initiative Order:**\n{tracker_message}"
+                f"Initiative rolled for all characters by the GM.\n\n**Initiative Order:**\n{tracker_message}"
             )
             return
         else:
@@ -247,19 +253,19 @@ async def initiative(interaction: discord.Interaction, character: str = None):
             )
             return
 
-    # Roll initiative for a single character
     if character not in character_list:
         await interaction.response.send_message("Invalid character name.", ephemeral=True)
         return
 
-    initiative_score = rng(20)
+    stats = get_character_stats(character)
+    modifier = stats.get("initiative_modifier", 0) if stats else 0
+    roll = rng(20)
+    initiative_score = roll + modifier
     bot.initiative_tracker.append({"character": character, "initiative": initiative_score})
     bot.initiative_tracker = sorted(bot.initiative_tracker, key=lambda x: x["initiative"], reverse=True)
-
-    # Generate tracker message
     tracker_message = "\n".join(
         [f"`{entry['character']}`: Initiative `{entry['initiative']}`" for entry in bot.initiative_tracker]
     )
     await interaction.response.send_message(
-        f"`{character}` rolled initiative: 🎲 {initiative_score}\n\n**Current Initiative Order:**\n{tracker_message}"
+        f"`{character}` rolled initiative: 🎲 {roll} + {modifier} = `{initiative_score}`\n\n**Initiative Order:**\n{tracker_message}"
     )

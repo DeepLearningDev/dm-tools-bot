@@ -158,35 +158,3 @@ character_library = {
     },
 }
 
-def get_character_stats(name: str) -> dict:
-    """
-    Retrieve stats for a character by name.
-    """
-    return character_library.get(name, None)
-
-def update_character_stat(name: str, stat: str, value):
-    """
-    Update a specific stat for a character.
-    """
-    if name in character_library and stat in character_library[name]:
-        character_library[name][stat] = value
-        return True
-    return False
-
-def add_to_inventory(name: str, item: str) -> bool:
-    """
-    Add an item to a character's inventory.
-    """
-    if name in character_library:
-        character_library[name]["inventory"].append(item)
-        return True
-    return False
-
-def remove_from_inventory(name: str, item: str) -> bool:
-    """
-    Remove an item from a character's inventory.
-    """
-    if name in character_library and item in character_library[name]["inventory"]:
-        character_library[name]["inventory"].remove(item)
-        return True
-    return False

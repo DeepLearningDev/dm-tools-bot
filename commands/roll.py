@@ -45,7 +45,7 @@ async def roll(interaction: discord.Interaction, dice: str = None, modifier: int
         if modifier is not None:
             response = (
                 f"You rolled a {dice} {dice_emoji} **{total_result}**\n"
-                f"Breakdown: ({roll_result}) + {modifier} = **{total_result}**"
+                f"Breakdown | {dice}: {roll_result} + modifier: {modifier} = **{total_result}**"
             )
         else:
             response = f"You rolled a {dice} {dice_emoji} **{roll_result}**"

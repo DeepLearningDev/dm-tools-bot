@@ -96,7 +96,6 @@ class InitiativeMenu(discord.ui.View):
         user_id = str(interaction.user.id)
 
         if self.all_rolled:
-            # Begin the encounter
             if user_id != self.gm_id:
                 await interaction.response.send_message("Only the GM can begin the encounter.", ephemeral=True)
                 return
@@ -108,14 +107,18 @@ class InitiativeMenu(discord.ui.View):
             await self.update_buttons(interaction)
             return
 
-        # Handle GM rolling initiative for all characters
+        # GM rolls for all characters
         if user_id == self.gm_id:
             rolled_characters = {entry["character"] for entry in self.initiative_tracker}
             remaining_characters = [char for char in self.character_list if char not in rolled_characters]
 
             for char in remaining_characters:
-                character_stats = get_character_stats(char)
-                modifier = character_stats.get("initiative_modifier", 0) if character_stats else 0
+                stats = get_character_stats(char)
+                if stats:
+                    modifier = stats.get("initiative modifier", 0)
+                else:
+                    print(f"Missing stats for {char}")
+                    modifier = 0
                 roll = rng(20)
                 initiative_score = roll + modifier
                 self.initiative_tracker.append({"character": char, "initiative": initiative_score})
@@ -136,7 +139,7 @@ class InitiativeMenu(discord.ui.View):
             await self.update_buttons(interaction)
             return
 
-        # Handle individual players rolling initiative
+        # Player rolls initiative for their character
         if user_id not in self.character_ids:
             await interaction.response.send_message(
                 "You are not assigned to any character in this initiative tracker.", ephemeral=True
@@ -152,8 +155,13 @@ class InitiativeMenu(discord.ui.View):
             )
             return
 
-        character_stats = get_character_stats(character_name)
-        modifier = character_stats.get("initiative_modifier", 0) if character_stats else 0
+        stats = get_character_stats(character_name)
+        if stats:
+            modifier = stats.get("initiative modifier", 0)
+        else:
+            print(f"Missing stats for {character_name}")
+            modifier = 0
+
         roll = rng(20)
         initiative_score = roll + modifier
         self.initiative_tracker.append({"character": character_name, "initiative": initiative_score})
@@ -172,6 +180,7 @@ class InitiativeMenu(discord.ui.View):
             view=self
         )
         await self.update_buttons(interaction)
+
 
 
     async def end_turn(self, interaction: discord.Interaction):

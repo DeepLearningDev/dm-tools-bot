@@ -9,6 +9,7 @@ from commands.roll import roll
 from commands.initiative import initiative
 from commands.stats import stats
 from commands.day import day
+from commands.weather import weather
 
 # Loads utils
 from utils.bot import bot

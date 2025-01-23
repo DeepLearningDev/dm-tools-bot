@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 import os
 load_dotenv()
 
-from utils.gen_roll import rng
+from utils.gen_random import rng
 from utils.bot import bot
 from utils.bot import GUILD_ID
 

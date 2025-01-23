@@ -8,6 +8,7 @@ import asyncio
 from commands.roll import roll
 from commands.initiative import initiative
 from commands.stats import stats
+from commands.day import day
 
 # Loads utils
 from utils.bot import bot
@@ -31,15 +32,18 @@ DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
 if not DISCORD_TOKEN:
     raise ValueError("DISCORD_TOKEN not found in environment variables.")
 
-# Load character data on bot startup
+# Ensure the save directory exists
+os.makedirs(SAVE_DIR, exist_ok=True)
+
+# Load data on bot startup
 load_from_file(CHARACTER_FILE, character_library)
-load_from_file(DAY_LOG, Day)
+load_from_file(DAY_LOG, {"Day": Day})  # Load Day into a dictionary
 
 # Function to handle graceful shutdown
 def graceful_shutdown():
     print("Shutting down bot and saving data...")
-    save_to_file(CHARACTER_FILE)
-    save_to_file(DAY_LOG)
+    save_to_file(CHARACTER_FILE, character_library)
+    save_to_file(DAY_LOG, {"Day": Day})  # Save Day wrapped in a dictionary
     # Close the event loop
     asyncio.get_event_loop().stop()
 

@@ -2,32 +2,16 @@ import discord
 from utils.bot import bot
 from utils.bot import GUILD_ID
 from utils.stat_manager import get_character_stats
-from commands.initiative import character_ids, character_list, GM_ID
+from libraries.player_library import character_library  # Import the character library
 
+# Extract character names from the library
+character_list = list(character_library.keys())
 
 @bot.tree.command(name="stats", description="Get stats for a character.", guild=GUILD_ID)
 async def stats(interaction: discord.Interaction, character: str, stat: str = None):
     """
     Retrieve stats for a character. Show all stats or a specific stat if provided.
     """
-    user_id = str(interaction.user.id)
-
-    # Check if the user is allowed to access the stats
-    if user_id != GM_ID:
-        if character not in character_list:
-            await interaction.response.send_message(f"Character '{character}' not found.", ephemeral=True)
-            return
-
-        character_index = character_list.index(character)
-        assigned_user_id = character_ids[character_index]
-
-        if user_id != assigned_user_id:
-            await interaction.response.send_message(
-                "You do not have permission to view stats for this character.", ephemeral=True
-            )
-            return
-
-    # Fetch character stats
     character_stats = get_character_stats(character)
     if not character_stats:
         await interaction.response.send_message(f"Character '{character}' not found.", ephemeral=True)
@@ -39,42 +23,52 @@ async def stats(interaction: discord.Interaction, character: str, stat: str = No
             await interaction.response.send_message(f"Stat '{stat}' not found for {character}.", ephemeral=True)
             return
         await interaction.response.send_message(
-            f"{character}'s **{stat.capitalize()}**: {character_stats[stat]}", ephemeral=True
+            f"{character}'s **{stat.capitalize()}**: {character_stats[stat]}",
+            ephemeral=True,
         )
     else:
         # Group stats, modifiers, and saves
-        stats_table = "```\n"  # Start a code block
+        stats_table = "```\n"
         stats_table += f"Stats for {character}:\n"
-        stats_table += f"{'Attribute':<16} | {'Stat':<5} | {'Modifier':<8} | {'Save':<5}\n"
-        stats_table += "-" * 45 + "\n"  # Separator
-        attributes = ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"]
+        stats_table += f"{'Attribute':<15} | {'Stat':<5} | {'Mod':<5} | {'Save':<5}\n"
+        stats_table += "-" * 40 + "\n"
+
+        attributes = [
+            "strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"
+        ]
+
         for attr in attributes:
             stat = character_stats.get(attr, "N/A")
             mod = character_stats.get(f"{attr} modifier", "N/A")
             save = character_stats.get(f"{attr} save", "N/A")
-            stats_table += f"{attr.capitalize():<16} | {stat:<5} | {mod:<8} | {save:<5}\n"
+            stats_table += f"{attr.capitalize():<15} | {stat:<5} | {mod:<5} | {save:<5}\n"
 
         stats_table += "```\n"
 
-        # Add other stats (non-attribute-related)
+        # Add other stats
         other_stats = "\n".join(
-            [f"**{key.replace('_', ' ').capitalize()}**: {value}" for key, value in character_stats.items()
-             if key not in attributes and not key.endswith(("modifier", "save")) and key != "inventory"]
+            [
+                f"**{key.capitalize()}**: {value}"
+                for key, value in character_stats.items()
+                if key not in attributes
+                and not key.endswith(("modifier", "save"))
+                and key != "inventory"
+            ]
         )
 
         # Inventory
         inventory = ", ".join(character_stats["inventory"]) if character_stats["inventory"] else "Empty"
 
         await interaction.response.send_message(
-            f"{stats_table}\n**Other Stats:**\n{other_stats}\n\n**Inventory:** {inventory}", ephemeral=True
+            f"{stats_table}\n**Other Stats:**\n{other_stats}\n\n**Inventory:** {inventory}",
+            ephemeral=True,
         )
-
 
 # Autocomplete for the `character` parameter
 @stats.autocomplete("character")
 async def character_autocomplete(interaction: discord.Interaction, current: str):
     """
-    Autocomplete for character names based on the input.
+    Autocomplete for character names.
     """
     return [
         discord.app_commands.Choice(name=character, value=character)
